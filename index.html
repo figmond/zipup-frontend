@@ -46,8 +46,8 @@
   <h3>What do you need?</h3>
 
   <select id="type">
-    <option value="offer">Offer Help → I give help</option>
-    <option value="hire">Need Help → I need help</option>
+    <option value="offer">Offer Help</option>
+    <option value="hire">Need Help</option>
   </select>
 
   <input id="title" placeholder="Enter details">
@@ -70,7 +70,6 @@
 <script>
 const API = "https://zipup-backend-i796.onrender.com";
 
-// MAP
 const map = L.map('map').setView([13.0827, 80.2707], 12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -94,9 +93,7 @@ async function loadPosts() {
       <b>${p.title}</b><br>
       ${p.type}<br>
       📍 ${p.latitude}, ${p.longitude}<br>
-
       <button onclick="respond(${p.post_id})">Respond</button>
-      <button onclick="deletePost(${p.post_id})">Delete</button>
     `;
 
     document.getElementById("posts").appendChild(div);
@@ -154,18 +151,30 @@ async function loadInbox() {
     div.className = "post";
 
     div.innerHTML = `
-      Request for Post ID: ${r.post_id} <br>
-      From User: ${r.from_user}
+      Request for Post: ${r.post_id}<br>
+      From User: ${r.from_user}<br>
+      Status: ${r.status}<br>
+
+      ${r.status === "pending" ? `
+        <button onclick="accept(${r.request_id})">Accept</button>
+        <button onclick="reject(${r.request_id})">Reject</button>
+      ` : ""}
     `;
 
     box.appendChild(div);
   });
 }
 
-// DELETE
-async function deletePost(id) {
-  await fetch(API + "/post/" + id, { method: "DELETE" });
-  loadPosts();
+// ACCEPT
+async function accept(id) {
+  await fetch(API + "/accept/" + id, { method: "POST" });
+  loadInbox();
+}
+
+// REJECT
+async function reject(id) {
+  await fetch(API + "/reject/" + id, { method: "POST" });
+  loadInbox();
 }
 
 // LOCATION
