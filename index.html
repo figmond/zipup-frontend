@@ -11,26 +11,17 @@
     header { background: #1976d2; color: white; padding: 15px; text-align: center; }
     #map { height: 300px; }
     .container { padding: 15px; }
-
     input, select, button {
       width: 100%;
-      margin: 6px 0;
+      margin: 5px 0;
       padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
     }
-
-    button {
-      background: #1976d2;
-      color: white;
-      border: none;
-    }
-
-    .post {
-      background: #f1f1f1;
+    button { background: #1976d2; color: white; border: none; }
+    .card {
+      background: #f2f2f2;
       padding: 10px;
       margin: 10px 0;
-      border-radius: 10px;
+      border-radius: 8px;
     }
   </style>
 </head>
@@ -43,75 +34,56 @@
 
 <div class="container">
 
-  <h3>What do you need?</h3>
+<h3>What do you need?</h3>
 
-  <select id="type">
-    <option value="offer">Offer Help</option>
-    <option value="hire">Need Help</option>
-  </select>
+<select id="type">
+  <option value="offer">Offer Help</option>
+  <option value="need">Need Help</option>
+</select>
 
-  <input id="title" placeholder="Enter details">
-  <input id="lat" placeholder="Latitude">
-  <input id="lng" placeholder="Longitude">
+<input id="title" placeholder="Enter details"/>
+<input id="lat" placeholder="Latitude"/>
+<input id="lng" placeholder="Longitude"/>
+<input id="zip" placeholder="Zipcode"/>
 
-  <button onclick="useLocation()">📍 Use Location</button>
-  <button onclick="createPost()">Post</button>
+<button onclick="useLocation()">📍 Use Location</button>
+<button onclick="createPost()">Post</button>
 
-  <h3>Posts</h3>
-  <button onclick="loadPosts()">Refresh</button>
-  <div id="posts"></div>
+<h3>Posts</h3>
+<button onclick="loadPosts()">Refresh</button>
+<div id="posts"></div>
 
-  <h3>Inbox</h3>
-  <button onclick="loadInbox()">Load Requests</button>
-  <div id="inbox"></div>
+<h3>Inbox</h3>
+<button onclick="loadRequests()">Load Requests</button>
+<div id="requests"></div>
 
 </div>
 
 <script>
 const API = "https://zipup-backend-i796.onrender.com";
 
-const map = L.map('map').setView([13.0827, 80.2707], 12);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+let map = L.map('map').setView([13.0827, 80.2707], 12);
 
-let markers = [];
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap'
+}).addTo(map);
 
-// LOAD POSTS
-async function loadPosts() {
-  const res = await fetch(API + "/posts");
-  const data = await res.json();
-
-  document.getElementById("posts").innerHTML = "";
-
-  markers.forEach(m => map.removeLayer(m));
-  markers = [];
-
-  data.forEach(p => {
-    const div = document.createElement("div");
-    div.className = "post";
-
-    div.innerHTML = `
-      <b>${p.title}</b><br>
-      ${p.type}<br>
-      📍 ${p.latitude}, ${p.longitude}<br>
-      <button onclick="respond(${p.post_id})">Respond</button>
-    `;
-
-    document.getElementById("posts").appendChild(div);
-
-    const marker = L.circleMarker([p.latitude, p.longitude], { radius: 8 }).addTo(map);
-    marker.bindPopup(p.title);
-    markers.push(marker);
+function useLocation() {
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById("lat").value = pos.coords.latitude;
+    document.getElementById("lng").value = pos.coords.longitude;
   });
 }
 
-// CREATE POST
 async function createPost() {
+
   const body = {
     user_id: 1,
     type: document.getElementById("type").value,
     title: document.getElementById("title").value,
     latitude: document.getElementById("lat").value,
-    longitude: document.getElementById("lng").value
+    longitude: document.getElementById("lng").value,
+    zipcode: document.getElementById("zip").value
   };
 
   await fetch(API + "/post", {
@@ -124,68 +96,61 @@ async function createPost() {
   loadPosts();
 }
 
-// RESPOND
-async function respond(postId) {
+async function loadPosts() {
+
+  const res = await fetch(API + "/posts");
+  const data = await res.json();
+
+  document.getElementById("posts").innerHTML = "";
+
+  data.forEach(p => {
+
+    const div = document.createElement("div");
+    div.className = "card";
+
+    const timeLeft = Math.floor((p.expires_at - Date.now()) / 60000);
+
+    div.innerHTML = `
+      <b>${p.title}</b><br>
+      ${p.type}<br>
+      📍 ${p.latitude}, ${p.longitude}<br>
+      ⏳ Expires in: ${timeLeft} mins<br>
+      <button onclick="respond(${p.id})">Respond</button>
+      <button onclick="deletePost(${p.id})">Delete</button>
+    `;
+
+    document.getElementById("posts").appendChild(div);
+  });
+}
+
+async function deletePost(id) {
+  await fetch(API + "/post/" + id, { method: "DELETE" });
+  loadPosts();
+}
+
+async function respond(id) {
   await fetch(API + "/request", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      post_id: postId,
-      from_user: 2
-    })
+    body: JSON.stringify({ post_id: id, from_user: 2 })
   });
 
   alert("Request sent");
 }
 
-// LOAD INBOX
-async function loadInbox() {
-  const res = await fetch(API + "/requests/1");
+async function loadRequests() {
+  const res = await fetch(API + "/requests");
   const data = await res.json();
 
-  const box = document.getElementById("inbox");
-  box.innerHTML = "";
+  document.getElementById("requests").innerHTML = "";
 
   data.forEach(r => {
     const div = document.createElement("div");
-    div.className = "post";
-
-    div.innerHTML = `
-      Request for Post: ${r.post_id}<br>
-      From User: ${r.from_user}<br>
-      Status: ${r.status}<br>
-
-      ${r.status === "pending" ? `
-        <button onclick="accept(${r.request_id})">Accept</button>
-        <button onclick="reject(${r.request_id})">Reject</button>
-      ` : ""}
-    `;
-
-    box.appendChild(div);
+    div.className = "card";
+    div.innerHTML = `Request for Post ID: ${r.post_id} from User: ${r.from_user}`;
+    document.getElementById("requests").appendChild(div);
   });
 }
-
-// ACCEPT
-async function accept(id) {
-  await fetch(API + "/accept/" + id, { method: "POST" });
-  loadInbox();
-}
-
-// REJECT
-async function reject(id) {
-  await fetch(API + "/reject/" + id, { method: "POST" });
-  loadInbox();
-}
-
-// LOCATION
-function useLocation() {
-  navigator.geolocation.getCurrentPosition(pos => {
-    document.getElementById("lat").value = pos.coords.latitude;
-    document.getElementById("lng").value = pos.coords.longitude;
-  });
-}
-
-loadPosts();
 </script>
 
 </body>
