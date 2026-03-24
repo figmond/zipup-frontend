@@ -61,6 +61,10 @@
   <button onclick="loadPosts()">Refresh</button>
   <div id="posts"></div>
 
+  <h3>Inbox</h3>
+  <button onclick="loadInbox()">Load Requests</button>
+  <div id="inbox"></div>
+
 </div>
 
 <script>
@@ -90,6 +94,8 @@ async function loadPosts() {
       <b>${p.title}</b><br>
       ${p.type}<br>
       📍 ${p.latitude}, ${p.longitude}<br>
+
+      <button onclick="respond(${p.post_id})">Respond</button>
       <button onclick="deletePost(${p.post_id})">Delete</button>
     `;
 
@@ -119,6 +125,41 @@ async function createPost() {
 
   alert("Posted");
   loadPosts();
+}
+
+// RESPOND
+async function respond(postId) {
+  await fetch(API + "/request", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      post_id: postId,
+      from_user: 2
+    })
+  });
+
+  alert("Request sent");
+}
+
+// LOAD INBOX
+async function loadInbox() {
+  const res = await fetch(API + "/requests/1");
+  const data = await res.json();
+
+  const box = document.getElementById("inbox");
+  box.innerHTML = "";
+
+  data.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "post";
+
+    div.innerHTML = `
+      Request for Post ID: ${r.post_id} <br>
+      From User: ${r.from_user}
+    `;
+
+    box.appendChild(div);
+  });
 }
 
 // DELETE
