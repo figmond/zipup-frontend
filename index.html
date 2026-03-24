@@ -39,21 +39,6 @@
 
 <header>📍 ZipUp</header>
 
-<!-- ZIP POPUP -->
-<div id="zipPopup" style="
-  position:fixed;top:0;left:0;right:0;bottom:0;
-  background:#000000aa;
-  display:flex;justify-content:center;align-items:center;
-  z-index:1000;
-">
-  <div style="background:white;padding:20px;border-radius:10px;text-align:center;">
-    <h3>Enter Zipcode</h3>
-    <input id="zipcodeInput" placeholder="PIN code">
-    <button onclick="saveZip()">ZipUp 🚀</button>
-  </div>
-</div>
-
-<!-- MAP -->
 <div id="map"></div>
 
 <div class="container">
@@ -81,41 +66,15 @@
 <script>
 const API = "https://zipup-backend-i796.onrender.com";
 
-let ZIP = localStorage.getItem("zip");
-
 // MAP
 const map = L.map('map').setView([13.0827, 80.2707], 12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 let markers = [];
 
-// SAVE ZIP
-function saveZip() {
-  const val = document.getElementById("zipcodeInput").value;
-  if (!val) return alert("Enter zipcode");
-
-  localStorage.setItem("zip", val);
-  ZIP = val;
-
-  document.getElementById("zipPopup").style.display = "none";
-  loadPosts();
-}
-
-// SHOW POPUP
-if (!ZIP) {
-  document.getElementById("zipPopup").style.display = "flex";
-} else {
-  document.getElementById("zipPopup").style.display = "none";
-  loadPosts();
-}
-
 // LOAD POSTS
 async function loadPosts() {
-  if (!ZIP) return;
-
-  console.log("FETCH ZIP:", ZIP);
-
-  const res = await fetch(API + "/posts/" + ZIP);
+  const res = await fetch(API + "/posts");
   const data = await res.json();
 
   document.getElementById("posts").innerHTML = "";
@@ -144,18 +103,13 @@ async function loadPosts() {
 
 // CREATE POST
 async function createPost() {
-  if (!ZIP) return alert("Enter zipcode first");
-
   const body = {
     user_id: 1,
     type: document.getElementById("type").value,
     title: document.getElementById("title").value,
     latitude: document.getElementById("lat").value,
-    longitude: document.getElementById("lng").value,
-    zipcode: ZIP
+    longitude: document.getElementById("lng").value
   };
-
-  console.log("POST BODY:", body);
 
   await fetch(API + "/post", {
     method: "POST",
@@ -180,6 +134,8 @@ function useLocation() {
     document.getElementById("lng").value = pos.coords.longitude;
   });
 }
+
+loadPosts();
 </script>
 
 </body>
