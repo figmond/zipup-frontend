@@ -69,10 +69,7 @@ async function addMoney() {
   const res = await fetch(API + "/wallet/add", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_id: userId,
-      amount: 50
-    })
+    body: JSON.stringify({ user_id: userId, amount: 50 })
   });
 
   const data = await res.json();
@@ -87,7 +84,7 @@ function useLocation() {
   });
 }
 
-// CREATE POST
+// POSTS
 async function createPost() {
   const type = document.getElementById("type").value;
   const details = document.getElementById("details").value;
@@ -101,10 +98,10 @@ async function createPost() {
     body: JSON.stringify({ type, details, lat, lng, zipcode })
   });
 
-  alert(await res.text());
+  const data = await res.json();
+  alert(data.message);
 }
 
-// LOAD POSTS
 async function loadPosts() {
   const res = await fetch(API + "/posts");
   const data = await res.json();
@@ -117,22 +114,19 @@ async function loadPosts() {
   document.getElementById("posts").innerHTML = html;
 }
 
-// RATE USER
+// RATING
 async function rateUser() {
   const to_user = document.getElementById("rateUser").value;
   const stars = document.getElementById("stars").value;
 
-  await fetch(API + "/rate", {
+  const res = await fetch(API + "/rate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from_user: userId,
-      to_user,
-      stars
-    })
+    body: JSON.stringify({ from_user: userId, to_user, stars })
   });
 
-  alert("Rated");
+  const data = await res.json();
+  alert(data.message);
 }
 </script>
 
