@@ -10,121 +10,148 @@
     body { 
       font-family: Arial, sans-serif; 
       margin: 0; 
-      padding: 10px;
+      padding: 0;
+      background: #f8f9fa;
     }
-    #map { height: 250px; }
-    .box { padding: 15px; }
-    input, select, button { 
+    
+    #map { 
+      height: 380px;        /* Broader map space */
+      width: 100%;
+    }
+    
+    .container {
+      padding: 15px;
+    }
+    
+    h3 {
+      margin: 20px 0 10px 0;
+      color: #333;
+    }
+    
+    input, button { 
       width: 100%; 
-      margin: 8px 0; 
-      padding: 12px; 
+      padding: 14px; 
+      margin: 8px 0;
       font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      border-radius: 8px;
+      border: 1px solid #ddd;
     }
+    
     button { 
       background: #2d7dd2; 
       color: white; 
       border: none; 
       cursor: pointer;
-    }
-    button:hover { opacity: 0.9; }
-
-    /* New Mode Buttons */
-    .mode-buttons button {
-      width: 48%;
-      margin: 5px 1%;
-      padding: 14px;
-      font-size: 16px;
       font-weight: bold;
+    }
+    
+    button:hover { 
+      opacity: 0.9; 
+    }
+    
+    /* Mode Buttons - Swiggy Style */
+    .mode-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .mode-buttons button {
+      flex: 1;
+      padding: 16px;
+      font-size: 17px;
+      font-weight: bold;
+      border-radius: 12px;
+      border: none;
+    }
+    
+    #wallet {
+      font-size: 18px;
+      font-weight: bold;
+      color: #2d7dd2;
+      margin: 10px 0;
+    }
+    
+    #posts {
+      margin-top: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      min-height: 100px;
     }
   </style>
 </head>
 
 <body>
 
-<div id="map"></div>
+  <!-- Broader Map -->
+  <div id="map"></div>
 
-<div class="box">
+  <div class="container">
 
-  <h3>Wallet</h3>
-  <div id="wallet">Balance: ₹0</div>
-  <button onclick="loadWallet()">Check Balance</button>
-  <button onclick="addMoney()">Add ₹50</button>
+    <h3>Wallet</h3>
+    <div id="wallet">Balance: ₹0</div>
+    <button onclick="loadWallet()">Check Balance</button>
+    <button onclick="addMoney()">Add ₹50</button>
 
-  <h3>Create Post</h3>
-  
-  <!-- NEW MODE BUTTONS -->
-  <div class="mode-buttons">
-    <button onclick="selectMode('help')" id="btnHelp" style="background: #f4c542; color:black;">
-      🟡 Need Help
-    </button>
-    <button onclick="selectMode('helper')" id="btnHelper">
-      🔵 Need Helper
-    </button>
+    <h3>Create Post</h3>
+    
+    <!-- Mode Buttons -->
+    <div class="mode-buttons">
+      <button onclick="selectMode('help')" id="btnHelp" style="background: #f4c542; color: black;">
+        🟡 Need Help
+      </button>
+      <button onclick="selectMode('helper')" id="btnHelper">
+        🔵 Need Helper
+      </button>
+    </div>
+
+    <!-- Ghost text input -->
+    <input id="details" placeholder="Lost things / Need ride / Need charging / Need blood">
+
+    <input id="lat" placeholder="Latitude">
+    <input id="lng" placeholder="Longitude">
+    <input id="zip" placeholder="Zipcode">
+
+    <button onclick="useLocation()">📍 Use Current Location</button>
+    <button onclick="createPost()">Post Now</button>
+
+    <h3>Posts</h3>
+    <button onclick="loadPosts()">Refresh Posts</button>
+    <div id="posts"></div>
+
+    <h3>Rate User</h3>
+    <input id="rateUser" placeholder="User ID">
+    <input id="stars" type="number" min="1" max="5" placeholder="Stars (1-5)">
+    <button onclick="rateUserAction()">Submit Rating</button>
+
   </div>
-
-  <select id="details">
-    <option>Select option</option>
-  </select>
-
-  <input id="lat" placeholder="Latitude">
-  <input id="lng" placeholder="Longitude">
-  <input id="zip" placeholder="Zipcode">
-
-  <button onclick="useLocation()">📍 Use Location</button>
-  <button onclick="createPost()">Post</button>
-
-  <h3>Posts</h3>
-  <button onclick="loadPosts()">Refresh</button>
-  <div id="posts"></div>
-
-  <h3>Rate User</h3>
-  <input id="rateUser" placeholder="User ID">
-  <input id="stars" type="number" min="1" max="5" placeholder="Stars">
-  <button onclick="rateUserAction()">Submit Rating</button>
-
-</div>
 
 <script>
 const API = "https://zipup-backend-i796.onrender.com";
 let userId = 2;
-let mode = "help";   // Default mode
+let mode = "help";
 
-// MAP
-let map = L.map('map').setView([13.0827, 80.2707], 12);
+// MAP - Larger view
+let map = L.map('map').setView([13.0827, 80.2707], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// NEW MODE SELECTOR FUNCTION
+// SELECT MODE FUNCTION (Updated as per your requirement)
 function selectMode(selected) {
   mode = selected;
 
-  const detailsSelect = document.getElementById("details");
+  const input = document.getElementById("details");
 
   if (mode === "help") {
     document.getElementById("btnHelp").style.background = "#f4c542";
     document.getElementById("btnHelper").style.background = "#2d7dd2";
 
-    detailsSelect.innerHTML = `
-      <option>Select option</option>
-      <option>Lost Things</option>
-      <option>Need Ride</option>
-      <option>Need Charging</option>
-      <option>Need Room</option>
-      <option>Need Blood</option>
-    `;
+    input.placeholder = "Lost things / Need ride / Need charging / Need blood";
   } else {
     document.getElementById("btnHelper").style.background = "#2d7dd2";
     document.getElementById("btnHelp").style.background = "#ccc";
 
-    detailsSelect.innerHTML = `
-      <option>Select option</option>
-      <option>Electrician</option>
-      <option>Plumber</option>
-      <option>Security</option>
-      <option>Driver</option>
-      <option>Home Nurse</option>
-    `;
+    input.placeholder = "Electrician / Plumber / Driver / Home nurse";
   }
 }
 
@@ -153,20 +180,20 @@ async function addMoney() {
 // LOCATION
 function useLocation() {
   navigator.geolocation.getCurrentPosition(pos => {
-    document.getElementById("lat").value = pos.coords.latitude;
-    document.getElementById("lng").value = pos.coords.longitude;
-  });
+    document.getElementById("lat").value = pos.coords.latitude.toFixed(6);
+    document.getElementById("lng").value = pos.coords.longitude.toFixed(6);
+  }, () => alert("Unable to get location"));
 }
 
-// UPDATED CREATE POST
+// CREATE POST - Updated validation
 async function createPost() {
-  const details = document.getElementById("details").value;
+  const details = document.getElementById("details").value.trim();
   const lat = document.getElementById("lat").value;
   const lng = document.getElementById("lng").value;
   const zipcode = document.getElementById("zip").value;
 
-  if (!details || details === "Select option") {
-    alert("Please select a valid option");
+  if (!details) {
+    alert("Please enter details");
     return;
   }
 
@@ -175,11 +202,11 @@ async function createPost() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       user_id: userId,
-      type: mode,        // Now using 'help' or 'helper'
-      details,
-      lat,
-      lng,
-      zipcode
+      type: mode,
+      details: details,
+      lat: lat,
+      lng: lng,
+      zipcode: zipcode
     })
   });
 
@@ -188,10 +215,11 @@ async function createPost() {
   if (data.error) {
     alert("Error: " + data.error);
   } else {
-    alert("✅ Post created successfully");
+    alert("✅ Post created successfully!");
     loadPosts();
-    // Reset fields after posting
-    document.getElementById("details").value = "Select option";
+    
+    // Reset fields
+    document.getElementById("details").value = "";
     document.getElementById("lat").value = "";
     document.getElementById("lng").value = "";
     document.getElementById("zip").value = "";
@@ -205,10 +233,14 @@ async function loadPosts() {
 
   let html = "";
   data.forEach(p => {
-    html += `<div><strong>${p.type === 'help' ? '🟡 Need Help' : '🔵 Need Helper'}</strong> - ${p.details}</div>`;
+    const typeLabel = p.type === 'help' ? '🟡 Need Help' : '🔵 Need Helper';
+    html += `<div style="padding:10px; background:white; margin:8px 0; border-radius:8px;">
+               <strong>${typeLabel}</strong><br>
+               ${p.details}
+             </div>`;
   });
 
-  document.getElementById("posts").innerHTML = html || "<p>No posts yet.</p>";
+  document.getElementById("posts").innerHTML = html || "<p>No posts available yet.</p>";
 }
 
 // RATE USER
@@ -227,7 +259,7 @@ async function rateUserAction() {
     body: JSON.stringify({
       from_user_id: userId,
       to_user_id: to_user,
-      stars
+      stars: parseInt(stars)
     })
   });
 
@@ -236,15 +268,15 @@ async function rateUserAction() {
   if (data.error) {
     alert("Error: " + data.error);
   } else {
-    alert("✅ Rating submitted");
+    alert("✅ Rating submitted successfully");
     document.getElementById("rateUser").value = "";
     document.getElementById("stars").value = "";
   }
 }
 
-// Initialize with default mode when page loads
+// Initialize on page load
 window.onload = () => {
-  selectMode("help");   // Default to "Need Help"
+  selectMode("help");   // Start with Need Help mode
   loadWallet();
   loadPosts();
 };
