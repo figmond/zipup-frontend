@@ -24,7 +24,12 @@
 
 <div class="container">
 
-<h3>What do you need?</h3>
+<h3>Wallet</h3>
+<button onclick="loadWallet()">Check Balance</button>
+<button onclick="addMoney()">Add ₹50</button>
+<div id="wallet"></div>
+
+<h3>Create Post</h3>
 
 <select id="type">
   <option value="offer">Offer Help</option>
@@ -52,21 +57,45 @@
 <script>
 const API = "https://zipup-backend-i796.onrender.com";
 
+let userId = 2;
+
 let map = L.map('map').setView([13.0827, 80.2707], 12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 let userLat = 13.0827;
 let userLng = 80.2707;
 
+// 💰 WALLET
+async function loadWallet() {
+  const res = await fetch(API + "/wallet/" + userId);
+  const data = await res.json();
+
+  document.getElementById("wallet").innerHTML =
+    "Balance: ₹" + data.balance;
+}
+
+async function addMoney() {
+  await fetch(API + "/wallet/add", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({user_id:userId, amount:50})
+  });
+
+  loadWallet();
+}
+
+// LOCATION
 function useLocation() {
   navigator.geolocation.getCurrentPosition(pos => {
     userLat = pos.coords.latitude;
     userLng = pos.coords.longitude;
+
     document.getElementById("lat").value = userLat;
     document.getElementById("lng").value = userLng;
   });
 }
 
+// CREATE POST
 async function createPost() {
   const body = {
     user_id: 1,
@@ -78,8 +107,8 @@ async function createPost() {
   };
 
   await fetch(API + "/post", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
     body: JSON.stringify(body)
   });
 
@@ -87,6 +116,7 @@ async function createPost() {
   loadPosts();
 }
 
+// LOAD POSTS
 async function loadPosts() {
   const res = await fetch(API + `/posts?lat=${userLat}&lng=${userLng}`);
   const data = await res.json();
@@ -104,7 +134,6 @@ async function loadPosts() {
         ${p.type}<br>
         📏 ${p.distance.toFixed(2)} km<br>
         <button onclick="respond(${p.id})">Respond</button>
-        <button onclick="checkUnlock(${p.id})">Check Unlock</button>
       `;
 
       document.getElementById("posts").appendChild(div);
@@ -112,16 +141,18 @@ async function loadPosts() {
   });
 }
 
+// REQUEST
 async function respond(id) {
   await fetch(API + "/request", {
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({post_id:id, from_user:2})
+    body: JSON.stringify({post_id:id, from_user:userId})
   });
 
   alert("Request sent");
 }
 
+// INBOX
 async function loadRequests() {
   const res = await fetch(API + "/requests");
   const data = await res.json();
@@ -135,15 +166,16 @@ async function loadRequests() {
     div.innerHTML = `
       Request for Post ${r.post_id}<br>
       From User ${r.from_user}<br>
-      <button onclick="accept(${r.post_id}, ${r.from_user})">Accept</button>
+      <button onclick="accept(${r.post_id}, ${r.from_user})">Accept (₹10)</button>
     `;
 
     document.getElementById("requests").appendChild(div);
   });
 }
 
+// ACCEPT + PAY
 async function accept(post_id, from_user) {
-  await fetch(API + "/accept", {
+  const res = await fetch(API + "/accept", {
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({
@@ -153,14 +185,9 @@ async function accept(post_id, from_user) {
     })
   });
 
-  alert("Unlocked 🔓");
-}
-
-async function checkUnlock(post_id) {
-  const res = await fetch(API + `/unlock?post_id=${post_id}&user_id=2`);
-  const data = await res.json();
-
-  alert(data.unlocked ? "Contact visible 🔓" : "Locked 🔒");
+  const text = await res.text();
+  alert(text);
+  loadWallet();
 }
 </script>
 
