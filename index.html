@@ -60,11 +60,11 @@ const API = "https://zipup-backend-i796.onrender.com";
 
 let map = L.map('map').setView([13.0827, 80.2707], 12);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap'
-}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 let markers = [];
+let userLat = 13.0827;
+let userLng = 80.2707;
 
 function clearMarkers() {
   markers.forEach(m => map.removeLayer(m));
@@ -73,8 +73,11 @@ function clearMarkers() {
 
 function useLocation() {
   navigator.geolocation.getCurrentPosition(pos => {
-    document.getElementById("lat").value = pos.coords.latitude;
-    document.getElementById("lng").value = pos.coords.longitude;
+    userLat = pos.coords.latitude;
+    userLng = pos.coords.longitude;
+
+    document.getElementById("lat").value = userLat;
+    document.getElementById("lng").value = userLng;
   });
 }
 
@@ -99,7 +102,7 @@ async function createPost() {
 }
 
 async function loadPosts() {
-  const res = await fetch(API + "/posts");
+  const res = await fetch(API + `/posts?lat=${userLat}&lng=${userLng}`);
   const data = await res.json();
 
   document.getElementById("posts").innerHTML = "";
@@ -120,12 +123,11 @@ async function loadPosts() {
       div.innerHTML = `
         <b>${p.title}</b><br>
         ${p.type}<br>
-        📍 ${p.latitude}, ${p.longitude}
+        📍 ${p.latitude}, ${p.longitude}<br>
+        📏 ${p.distance.toFixed(2)} km away
       `;
     } else {
-      div.innerHTML = `
-        <b>${cluster.count} posts in this area</b>
-      `;
+      div.innerHTML = `<b>${cluster.count} nearby posts</b>`;
     }
 
     document.getElementById("posts").appendChild(div);
