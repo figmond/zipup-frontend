@@ -2,68 +2,61 @@
 <html>
 <head>
   <title>ZipUp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
   <style>
     body { font-family: Arial; margin: 0; }
-    header { background: #1976d2; color: white; padding: 15px; text-align: center; }
-    #map { height: 300px; }
-    .container { padding: 15px; }
+    #map { height: 250px; }
+    .box { padding: 10px; }
     input, select, button { width: 100%; margin: 5px 0; padding: 10px; }
-    button { background: #1976d2; color: white; border: none; }
-    .card { background: #f2f2f2; padding: 10px; margin: 10px 0; border-radius: 8px; }
+    button { background: #2d7dd2; color: white; border: none; }
   </style>
 </head>
 
 <body>
 
-<header>📍 ZipUp</header>
 <div id="map"></div>
 
-<div class="container">
+<div class="box">
+  <h3>Wallet</h3>
+  <div id="wallet">Balance: ₹0</div>
+  <button onclick="loadWallet()">Check Balance</button>
+  <button onclick="addMoney()">Add ₹50</button>
 
-<h3>Wallet</h3>
-<button onclick="loadWallet()">Check Balance</button>
-<button onclick="addMoney()">Add ₹50</button>
-<div id="wallet"></div>
+  <h3>Create Post</h3>
+  <select id="type">
+    <option>Offer Help</option>
+    <option>Need Help</option>
+  </select>
 
-<h3>Create Post</h3>
+  <input id="details" placeholder="Enter details">
+  <input id="lat" placeholder="Latitude">
+  <input id="lng" placeholder="Longitude">
+  <input id="zip" placeholder="Zipcode">
 
-<select id="type">
-  <option value="offer">Offer Help</option>
-  <option value="need">Need Help</option>
-</select>
+  <button onclick="useLocation()">📍 Use Location</button>
+  <button onclick="createPost()">Post</button>
 
-<input id="title" placeholder="Enter details"/>
-<input id="lat" placeholder="Latitude"/>
-<input id="lng" placeholder="Longitude"/>
-<input id="zip" placeholder="Zipcode"/>
+  <h3>Posts</h3>
+  <button onclick="loadPosts()">Refresh</button>
+  <div id="posts"></div>
 
-<button onclick="useLocation()">📍 Use Location</button>
-<button onclick="createPost()">Post</button>
-
-<h3>Posts</h3>
-<button onclick="loadPosts()">Refresh</button>
-<div id="posts"></div>
-
-<h3>Rate User</h3>
-<input id="rateUser" placeholder="User ID"/>
-<input id="stars" type="number" min="1" max="5" placeholder="Stars (1-5)"/>
-<button onclick="rateUser()">Submit Rating</button>
-
+  <h3>Rate User</h3>
+  <input id="rateUser" placeholder="User ID">
+  <input id="stars" type="number" min="1" max="5" placeholder="Stars">
+  <button onclick="rateUser()">Submit Rating</button>
 </div>
 
 <script>
 const API = "https://zipup-backend-i796.onrender.com";
 let userId = 2;
 
+// MAP
 let map = L.map('map').setView([13.0827, 80.2707], 12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-let userLat = 13.0827;
-let userLng = 80.2707;
 
 // WALLET
 async function loadWallet() {
@@ -73,82 +66,70 @@ async function loadWallet() {
 }
 
 async function addMoney() {
-  await fetch(API + "/wallet/add", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({user_id:userId, amount:50})
+  const res = await fetch(API + "/wallet/add", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: userId,
+      amount: 50
+    })
   });
-  loadWallet();
+
+  const data = await res.json();
+  document.getElementById("wallet").innerHTML = "Balance: ₹" + data.balance;
 }
 
 // LOCATION
 function useLocation() {
   navigator.geolocation.getCurrentPosition(pos => {
-    userLat = pos.coords.latitude;
-    userLng = pos.coords.longitude;
-    document.getElementById("lat").value = userLat;
-    document.getElementById("lng").value = userLng;
+    document.getElementById("lat").value = pos.coords.latitude;
+    document.getElementById("lng").value = pos.coords.longitude;
   });
 }
 
 // CREATE POST
 async function createPost() {
-  const body = {
-    user_id: 1,
-    type: document.getElementById("type").value,
-    title: document.getElementById("title").value,
-    latitude: document.getElementById("lat").value,
-    longitude: document.getElementById("lng").value,
-    zipcode: document.getElementById("zip").value
-  };
+  const type = document.getElementById("type").value;
+  const details = document.getElementById("details").value;
+  const lat = document.getElementById("lat").value;
+  const lng = document.getElementById("lng").value;
+  const zipcode = document.getElementById("zip").value;
 
-  await fetch(API + "/post", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify(body)
+  const res = await fetch(API + "/posts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, details, lat, lng, zipcode })
   });
 
-  alert("Posted");
-  loadPosts();
+  alert(await res.text());
 }
 
-// LOAD POSTS WITH ⭐
+// LOAD POSTS
 async function loadPosts() {
-  const res = await fetch(API + `/posts?lat=${userLat}&lng=${userLng}`);
+  const res = await fetch(API + "/posts");
   const data = await res.json();
 
-  document.getElementById("posts").innerHTML = "";
-
-  data.forEach(cluster => {
-    cluster.posts.forEach(p => {
-
-      const div = document.createElement("div");
-      div.className = "card";
-
-      div.innerHTML = `
-        <b>${p.title}</b><br>
-        ${p.type}<br>
-        ⭐ Rating: ${p.rating}<br>
-        📏 ${p.distance.toFixed(2)} km<br>
-      `;
-
-      document.getElementById("posts").appendChild(div);
-    });
+  let html = "";
+  data.forEach(p => {
+    html += `<div>${p.type} - ${p.details}</div>`;
   });
+
+  document.getElementById("posts").innerHTML = html;
 }
 
-// ⭐ RATE
+// RATE USER
 async function rateUser() {
-  const body = {
-    from_user: userId,
-    to_user: document.getElementById("rateUser").value,
-    stars: document.getElementById("stars").value
-  };
+  const to_user = document.getElementById("rateUser").value;
+  const stars = document.getElementById("stars").value;
 
   await fetch(API + "/rate", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify(body)
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from_user: userId,
+      to_user,
+      stars
+    })
   });
 
   alert("Rated");
